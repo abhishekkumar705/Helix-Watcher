@@ -92,10 +92,11 @@ The corpus is written to a contract — `corpus_contract` returns it in full, an
 reading before you propose a new page. Several of its rules reject a finding rather than
 merely shaping it:
 
-- **No provenance in the prose.** A page never cites a flow, source, nexset, toolset,
-  transform or research artifact. Nexla internal ids are how the finding was *found*, not what
-  the next agent needs. Business objects are different and belong: a credential id, a customer
-  or ad-account id, a GA4 property, an object or property name.
+- **No provenance in the prose, and no instance identifiers.** A page never cites a flow,
+  source, nexset, toolset, transform or research artifact. It also never carries a numeric
+  credential, account, customer or property id. The corpus names the *kind* — "the GA4
+  property", "the standing HubSpot credential" — and leaves resolving the instance to the
+  agent. Object and property **names** are fine; the numbers are not.
 - **One page per logical system, never per flow.** Merge UAT and production variants of the
   same system, keeping the behavioural difference on the page.
 - **A concept is meaning that survives inspecting one system** — a policy, a language binding,
