@@ -20,7 +20,7 @@ question: *what exactly, and which page does it go on?* It has eleven read-only 
 it can open corpus pages, search other sessions, read the corpus contract — and costs
 about $2.48 a session.
 
-We tested them against 36 hand-labelled sessions and 61 hand-verified findings. Then we did
+We tested them against 36 hand-labelled sessions and 60 hand-verified findings. Then we did
 the test that actually matters: we wrote the findings into a copy of the corpus, put a fresh
 agent in front of eight decision points where a real session had gone wrong, and checked
 whether the new pages changed its answer.
@@ -107,7 +107,7 @@ We hand-built a set of findings we were confident were in these 18 sessions, the
 separate model grade the run against it. The judge weighed each finding against the
 transcript itself, so a finding could be right even where our list was wrong.
 
-**Of 36 findings we knew were there, the run found 25. That's 69%.**
+**Of 35 findings we knew were there, the run found 24. That's 69%.**
 
 | session | found | of |
 |---|---|---|
@@ -118,13 +118,13 @@ transcript itself, so a finding could be right even where our list was wrong.
 | 0208d2da | 2 | 4 |
 | e6d8771b | 2 | 4 |
 | f816aac3 | 2 | 3 |
-| 0c3d2227 | 2 | 2 |
+| 0c3d2227 | 1 | 1 |
 | 40a8caa2 | 1 | 2 |
 | 4539cd25 | 1 | 1 |
 | 67436d0a | 1 | 1 |
 | 11301cae | 0 | 1 |
 
-Of the 25 it found, 13 were spot on, 10 were the right finding aimed at a slightly different
+Of the 24 it found, 12 were spot on, 10 were the right finding aimed at a slightly different
 section of the same page, and 2 were thin.
 
 **The 11 it missed cluster in one place.** Five of them are the same defect — a reporting tool
@@ -134,9 +134,9 @@ are tool descriptions that claim something the tool cannot do. Every one is some
 far more carefully than what was sent to them, and closing that gap is the clearest single
 improvement available.
 
-**Setting aside the extras, 25 of the 37 findings it reported landed on something we already
-knew was real — 68%.** The other 12 break down as 9 where it asserted something it never
-quoted, and 3 that were out of scope. The 9 are all the same shape: a confident claim that
+**Setting aside the extras, 24 of the 37 findings it reported landed on something we already
+knew was real — 65%.** The other 13 break down as 9 where it asserted something it never
+quoted, and 4 that were out of scope. The 9 are all the same shape: a confident claim that
 the session "contradicts the LinkedIn redaction rule," with no quote of the rule. It reached
 for that phrase in four separate sessions. Our structural checks caught every one, because a
 finding claiming a contradiction is required to quote the page it contradicts, but the model
@@ -164,11 +164,11 @@ the line it goes after.
 
 ### Every quote was checked by machine
 
-All 151 supporting quotes were located in the raw transcripts by string search. 151 of 151
+All 149 supporting quotes were located in the raw transcripts by string search. 149 of 149
 found, at the exact message claimed.
 
-This check caught four fabricated message numbers in our *own* hand-built reference set. A
-a quote you can't locate is worth nothing.
+This check caught four fabricated message numbers in our *own* hand-built reference set.
+A quote you can't locate is worth nothing.
 
 ---
 
