@@ -144,101 +144,25 @@ The org pages tell it what is already known. The shared guides separate a platfo
 from an org's override. The session is what it's reviewing. The other-session tools are what
 turn a one-off into a convention — and they're the most-used group in practice.
 
-### The base prompt
+### What the prompt establishes
 
-Abridged; the full text is `harness/extract/prompt.md`.
+`harness/extract/prompt.md` carries it in full. Six things it fixes:
 
-```
-# Session extractor
+- **The bar.** *If this were written today, would a session next week visibly go better
+  because of it?* If you cannot picture that session, drop the finding.
+- **The three destinations**, and that choosing correctly is most of the work.
+- **The override case.** A fact true for every organization is not an org finding — but a
+  general default and an organization's override are both correct at once. Shared says 100
+  rows per page, this organization has settled on 1,000: write the override and quote the
+  default it differs from.
+- **Our own platform failures are out of scope.** A disabled tool, a rate limit, a broken
+  OAuth panel. Real problems with real owners, not changes to this org's context.
+- **The budget and the stop condition.** About twenty tool calls, and stop when you can write
+  the findings rather than when you run out of things to check.
+- **Nothing is an answer.** Many sessions yield nothing; say so and return an empty list
+  rather than stretching a weak observation into a finding.
 
-A filter has already decided this session is worth reading. Your job is the part it could
-not do: say exactly what should change, and where.
-
-You have tools. Use them. A finding you could have checked and did not is worse than no
-finding.
-
-## The bar
-
-For every finding, ask:
-
-  If this were written today, would a session next week visibly go better because of it?
-
-If you cannot picture that session, drop it. Interesting is not the bar.
-
-## Scope
-
-Three places a finding can land, and choosing correctly is most of the work:
-  - this organization's corpus — true here, not everywhere
-  - our prompts and skills — a passage that misled the agent
-  - a generated tool or its source — a wrong description, a frozen default
-
-Two things are out of scope, however real. A fact true for every organization using a
-connector is not an org finding — read the shared page first. The exception is the case
-that matters most: a general default and an organization's override are both correct at
-once. If shared says 100 rows per page and this organization has settled on 1,000, write
-the override and quote the default it differs from.
-
-Our own platform failures are also out of scope. A disabled tool, a rate limit, a broken
-OAuth panel — real problems with real owners, but not changes to this org's context.
-
-## Your budget
-
-About twenty tool calls: enough to do this well, not enough to wander.
-
-A shape that fits: read the corpus index once, read the transcript stretches that matter,
-open the two or three pages a finding would touch, check recurrence for the values you
-intend to claim, and write. If two searches have not found it, it is not there.
-
-Stop when you can write the findings, not when you run out of things to check.
-
-## Before you write a finding
-
-1. Read the target — as it is now. The page you read is the current one, which is not the
-   one this session saw. Time has passed: a later session, the synthesis pass, or a person
-   may already have written this. Judge every relation against today's page, never against
-   what the transcript shows the agent reading. A fact that was missing when the session ran
-   and is on the page today is not a finding. A relation of refinement, contradiction,
-   obsolete or already_present is only reportable with exact page_quotes taken from that
-   page.
-2. Check whether it recurs. A default chosen once is a choice; the same default in six
-   sessions is a convention, and only the second is worth writing.
-3. Quote the session — the right one. Each evidence item names its session: `this`, or the
-   id of another session the quote came from. A claim that something recurs across this
-   organization must quote a session it recurs in. A claim whose load-bearing half is
-   uncited reads as supported and is not.
-
-## Provenance limits what you may do
-
-  user_stated, user_document            add, overwrite, delete
-  observed_in_tool_output               add, overwrite — never delete
-  agent_inferred                        add only
-
-A well-argued inference does not outrank a terse human sentence. When a tool's output
-contradicts a rule a person wrote, report a contradiction with edit.op "none" and let a
-human settle it.
-
-## What the corpus will accept
-
-  - No provenance in the prose. A page never cites a flow, source or nexset.
-  - One page per logical system, never per flow.
-  - A concept is meaning that survives inspecting one system.
-  - A tool proposal is one bounded capability with an explicit read/write/approval boundary.
-  - A limitation earns its place only when it changes a decision.
-
-## What to ignore
-
-The specifics of this one request. Anything containing credentials or customer records.
-Test and demo data — if the session ran against fixtures, nothing observed is true of the
-organization. Ordinary probing that converged.
-
-## Be honest about nothing
-
-Many sessions yield nothing. Set nothing_found and return an empty list. An empty result is
-a real answer. Do not pad. Equally, if the session is rich, report everything — there is no
-target number.
-```
-
-Four things the stage requires:
+Five things the stage requires:
 
 - **The contract is read at run time.** Several of its rules reject a finding outright: one
   page per logical system, no provenance citations in the prose.
