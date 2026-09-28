@@ -13,7 +13,7 @@ Measurements are in `docs/report.md`.
                     every finished session
                               │
                       ┌───────▼────────┐
-                      │  1. FILTER     │  one call, no tools
+                      │  1. FILTER     │  agentic, session tools only
                       │  ranks sessions│  how much is here, where to look
                       └───────┬────────┘
                               │  highest rank first
@@ -45,8 +45,8 @@ Measurements are in `docs/report.md`.
 
 Each stage exists because it sees something the one before it can't:
 
-- **Filter** — a compacted transcript and a list of page names. Enough to judge whether a
-  session is worth a closer look.
+- **Filter** — a slice of the session, the whole session on request, and a list of page
+  names. Enough to judge whether a session is worth a closer look.
 - **Extraction** — the pages themselves, plus other sessions. Needed to say *this refines an
   existing line*, or *many sessions have settled on this*.
 - **Synthesis** — an organization's accumulated findings. The only place duplicates and
@@ -58,7 +58,20 @@ Each stage exists because it sees something the one before it can't:
 
 ## Stage 1 — Filter
 
-One call. Compacted transcript plus a list of what the org already has. No tools.
+An agentic loop, like extraction, but over the session alone. It opens on a compacted slice
+of the transcript plus a list of what the organization already has, and fetches the rest of
+the session when the slice is not enough.
+
+| tool | what it gives |
+|---|---|
+| `transcript` | a range of messages from this session, in full |
+| `transcript_search` | messages in this session matching a term |
+| `corpus_index` | every page in this org's corpus, with descriptions |
+
+**It gets session tools and no corpus tools.** Reading pages is what stage 2 is for and is
+the expensive half; handing the filter `corpus_read` would collapse the two stages into one.
+The index is enough to know whether a system has a page. It is not enough to know what that
+page says, and that boundary is the whole reason the stages are separate.
 
 - **Produces a ranking.** Almost every session with real work has something worth writing, so
   "is there anything here?" is nearly always yes. Output is *how much*, plus where to look.
@@ -82,8 +95,6 @@ One call. Compacted transcript plus a list of what the org already has. No tools
 
 `contradicts_written` is the one the filter cannot settle on its own, for the reason above.
 
----
-
 ## Stage 2 — Extraction
 
 ### How the loop runs
@@ -106,6 +117,10 @@ The model is given a slice and a map, then fetches the rest itself.
   `nothing_found`. Rules a JSON schema cannot express — provenance against edit operation,
   page quotes required for a contradiction, every quote naming its session — are checked in
   code after the model returns.
+- **The corpus it reads is the current one**, whatever version the session ran against. A
+  session from three weeks ago saw an older corpus; a later session, synthesis, or a person
+  may have written the same fact since. Every relation is judged against the page as it
+  stands today.
 - **Every tool call is recorded** per session. Which tools actually get used is half of what
   the stage measures.
 
@@ -178,8 +193,13 @@ Stop when you can write the findings, not when you run out of things to check.
 
 ## Before you write a finding
 
-1. Read the target. A relation of refinement, contradiction, obsolete or already_present
-   is only reportable with exact page_quotes taken from that page.
+1. Read the target — as it is now. The page you read is the current one, which is not the
+   one this session saw. Time has passed: a later session, the synthesis pass, or a person
+   may already have written this. Judge every relation against today's page, never against
+   what the transcript shows the agent reading. A fact that was missing when the session ran
+   and is on the page today is not a finding. A relation of refinement, contradiction,
+   obsolete or already_present is only reportable with exact page_quotes taken from that
+   page.
 2. Check whether it recurs. A default chosen once is a choice; the same default in six
    sessions is a convention, and only the second is worth writing.
 3. Quote the session — the right one. Each evidence item names its session: `this`, or the
@@ -222,6 +242,8 @@ Four things the stage requires:
 
 - **The contract is read at run time.** Several of its rules reject a finding outright: one
   page per logical system, no provenance citations in the prose.
+- **The corpus is read at head.** The session is history; the page is live. Judging a finding
+  against the corpus the session saw would re-propose everything written since.
 - **Evidence names its session.** Which session, which message, whose turn. Verified by string
   search against that session. Without the session field, a model that knows a value recurs
   has no way to say so, and grabs the nearest quote instead.
