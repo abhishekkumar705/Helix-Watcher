@@ -86,7 +86,30 @@ One call. Compacted transcript plus a list of what the org already has. No tools
 
 ## Stage 2 — Extraction
 
-Agentic loop over eleven read-only tools, in four groups:
+### How the loop runs
+
+The model is given a slice and a map, then fetches the rest itself.
+
+- **The opening turn** carries the session's facts — org, user, message count, connectors
+  touched, tools built, errors — and the **first 40 messages** rendered in full, with tool
+  outputs and the agent's reasoning both intact. Some connector limits are stated only in
+  reasoning, and everything the user said arrives as tool output, because the agent asks
+  questions through a tool.
+- **The rest is not handed over.** A session of 350 messages arrives as 40 plus a line saying
+  how many remain and which tool reads them. That is deliberate: `relation` and `page_quotes`
+  require reading the target page, and telling a convention from a one-off requires reading
+  other sessions. Neither is answerable from a prompt, however much is stuffed into it.
+- **Up to 22 iterations**, with a stated budget of about twenty tool calls. The loop resends
+  the whole conversation each turn, so cost grows with the square of the iteration count —
+  the cap is what keeps that bounded.
+- **It ends in a fixed schema.** The final turn is structured JSON: a list of findings, or
+  `nothing_found`. Rules a JSON schema cannot express — provenance against edit operation,
+  page quotes required for a contradiction, every quote naming its session — are checked in
+  code after the model returns.
+- **Every tool call is recorded** per session. Which tools actually get used is half of what
+  the stage measures.
+
+### The tools
 
 | tool | what it gives |
 |---|---|
@@ -105,6 +128,97 @@ Agentic loop over eleven read-only tools, in four groups:
 The org pages tell it what is already known. The shared guides separate a platform default
 from an org's override. The session is what it's reviewing. The other-session tools are what
 turn a one-off into a convention — and they're the most-used group in practice.
+
+### The base prompt
+
+Abridged; the full text is `harness/extract/prompt.md`.
+
+```
+# Session extractor
+
+A filter has already decided this session is worth reading. Your job is the part it could
+not do: say exactly what should change, and where.
+
+You have tools. Use them. A finding you could have checked and did not is worse than no
+finding.
+
+## The bar
+
+For every finding, ask:
+
+  If this were written today, would a session next week visibly go better because of it?
+
+If you cannot picture that session, drop it. Interesting is not the bar.
+
+## Scope
+
+Three places a finding can land, and choosing correctly is most of the work:
+  - this organization's corpus — true here, not everywhere
+  - our prompts and skills — a passage that misled the agent
+  - a generated tool or its source — a wrong description, a frozen default
+
+Two things are out of scope, however real. A fact true for every organization using a
+connector is not an org finding — read the shared page first. The exception is the case
+that matters most: a general default and an organization's override are both correct at
+once. If shared says 100 rows per page and this organization has settled on 1,000, write
+the override and quote the default it differs from.
+
+Our own platform failures are also out of scope. A disabled tool, a rate limit, a broken
+OAuth panel — real problems with real owners, but not changes to this org's context.
+
+## Your budget
+
+About twenty tool calls: enough to do this well, not enough to wander.
+
+A shape that fits: read the corpus index once, read the transcript stretches that matter,
+open the two or three pages a finding would touch, check recurrence for the values you
+intend to claim, and write. If two searches have not found it, it is not there.
+
+Stop when you can write the findings, not when you run out of things to check.
+
+## Before you write a finding
+
+1. Read the target. A relation of refinement, contradiction, obsolete or already_present
+   is only reportable with exact page_quotes taken from that page.
+2. Check whether it recurs. A default chosen once is a choice; the same default in six
+   sessions is a convention, and only the second is worth writing.
+3. Quote the session — the right one. Each evidence item names its session: `this`, or the
+   id of another session the quote came from. A claim that something recurs across this
+   organization must quote a session it recurs in. A claim whose load-bearing half is
+   uncited reads as supported and is not.
+
+## Provenance limits what you may do
+
+  user_stated, user_document            add, overwrite, delete
+  observed_in_tool_output               add, overwrite — never delete
+  agent_inferred                        add only
+
+A well-argued inference does not outrank a terse human sentence. When a tool's output
+contradicts a rule a person wrote, report a contradiction with edit.op "none" and let a
+human settle it.
+
+## What the corpus will accept
+
+  - No provenance in the prose. A page never cites a flow, source or nexset.
+  - One page per logical system, never per flow.
+  - A concept is meaning that survives inspecting one system.
+  - A tool proposal is one bounded capability with an explicit read/write/approval boundary.
+  - A limitation earns its place only when it changes a decision.
+
+## What to ignore
+
+The specifics of this one request. Anything containing credentials or customer records.
+Test and demo data — if the session ran against fixtures, nothing observed is true of the
+organization. Ordinary probing that converged.
+
+## Be honest about nothing
+
+Many sessions yield nothing. Set nothing_found and return an empty list. An empty result is
+a real answer. Do not pad. Equally, if the session is rich, report everything — there is no
+target number.
+```
+
+Four things the stage requires:
 
 - **The contract is read at run time.** Several of its rules reject a finding outright: one
   page per logical system, no provenance citations in the prose.
