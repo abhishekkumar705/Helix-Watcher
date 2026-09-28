@@ -95,6 +95,30 @@ page says, and that boundary is the whole reason the stages are separate.
 
 `contradicts_written` is the one the filter cannot settle on its own, for the reason above.
 
+### The score
+
+The filter emits a probability per category. Ranking is a weighted sum of them:
+
+```
+score(s) = Σ  w_c · p_c(s)
+           c
+```
+
+`p_c` is the filter's probability for category `c`; `w_c` is the expected number of **durable**
+findings a session yields when that category is genuinely present. Sessions are extracted in
+descending order, down to a cutoff `k`.
+
+Two things sit outside the sum:
+
+- **Disqualifiers are a hard gate applied first.** Zero-activity and demo-data sessions are
+  removed rather than scored. They are the only sessions where the answer is genuinely
+  nothing.
+- **`contradicts_written` carries a weight of zero.** The filter cannot settle it, so it
+  travels to extraction as a flag saying where to look without moving the rank.
+
+Initial weights come from findings per session per category on a labelled set. Every value
+after that comes from the monitor, and so does `k`.
+
 ## Stage 2 — Extraction
 
 ### How the loop runs
@@ -246,17 +270,62 @@ Per line, per page, per organization:
 
 ### What it tunes
 
-Each measurement lands on a specific parameter:
+Four quantities per category, per organization, at a 30- and 90-day horizon:
 
-| what the monitor sees | what it changes |
+| quantity | what it counts |
 |---|---|
-| a category whose lines are deleted by humans more often than they survive | that category is demoted in the filter, or extraction stops emitting it |
-| sessions below a rank band yield nothing that survives | the extraction cutoff moves up, and budget goes to the top of the queue |
-| a category with high survival and low volume | the filter's weighting on it rises |
-| one page churning between two values | a synthesis conflict rather than an extraction error, routed accordingly |
-| lines that survive but are never read | the corpus is growing in a direction nobody uses |
-| the same fact written by two sessions | synthesis is not merging on that shape of finding |
+| `written(c)` | lines the watcher wrote attributable to category `c` |
+| `alive(c)` | still present and unmodified at the horizon |
+| `killed_by_human(c)` | removed or overwritten by a non-agent actor |
+| `never_read(c)` | survived, but never appeared in a read audit |
+
+Three of them land on a specific knob.
+
+**Category weight — moves the ranking.**
+
+```
+w_c  ←  alive(c) / sessions_where_c_fired
+```
+
+Feeds straight back into the filter's score. A category that produces lines people keep
+rises; one that produces lines that get overwritten sinks. Nothing is hand-tuned.
+
+**Emission gate — moves what extraction may report.**
+
+```
+killed_by_human(c) / written(c)  >  0.5   →  extraction stops emitting c
+```
+
+A human deleting a line is the only signal in the system that says the watcher was wrong.
+Nothing upstream can produce it. A category people delete more often than they keep is a net
+cost, and switching it off is the right response rather than weighting it down.
+
+**Extraction cutoff — moves how far down the queue to go.**
+
+Each written line carries the rank band its session came from, so the monitor gets marginal
+durable yield per band. `k` moves to the band where that marginal yield collapses. This is
+the one genuinely operational knob, and it is the number a fixed eval set cannot supply,
+because it counts findings *produced* rather than findings *kept*.
+
+Two more route rather than tune. A page churning between two values is a synthesis conflict
+and goes to stage 3 with no weight changed. Lines that survive but are never read say the
+corpus is growing where nobody looks, which is a question about the contract rather than
+about a category.
 
 Without this stage every parameter in the pipeline is set by hand against a fixed eval set,
 which measures agreement with one reading at one point in time. The monitor replaces that
 with what the organization actually kept.
+
+### What this requires upstream
+
+**Writes must carry lineage.** The monitor can attribute a surviving or deleted line to a
+category only if the corpus write records which finding produced it, and which session and
+category that finding came from.
+
+Helix's change history already records the writing agent and the actor per version, so the
+field exists — the watcher has to put a finding id in it, or keep its own ledger mapping
+finding to path and version. Without that join the monitor measures total churn and nothing
+attributable, which tunes nothing.
+
+That is the monitor's one addition upstream. Everything else it reads from history that is
+already recorded.
