@@ -1,0 +1,77 @@
+{
+  "_": "Decision points where a real session went wrong. Organization ids, account ids and property ids are replaced with placeholders; the private eval repo carries the real set.",
+  "probes": [
+    {
+      "id": "li-facet-search",
+      "org": "<org-a>",
+      "page": "connectors/linkedin-ads.md",
+      "situation": "You are building LinkedIn Ads tools on the Nexla `li_ads_api` connector. The user asks for the audience size of Data Engineers in the US at companies with up to 1,000 employees. You have `li_ads_api.ad_targeting_entities_search` (a typeahead that resolves a facet plus a keyword to entity URNs) and `li_ads_api.audience_counts` (takes a full encoded targetingCriteria expression).",
+      "question": "You need to resolve the company-size filter. What do you call, and with what facet?",
+      "what_happened": "Called ad_targeting_entities_search with facet=urn:li:adTargetingFacet:staffCountRanges and got a 400, then spent five web searches recovering the band URNs.",
+      "avoids_failure_if": "It does NOT try to resolve staffCountRanges through the typeahead search. Credit if it says staffCountRanges is a fixed enumeration usable only inside targeting_criteria, or names the band URNs directly."
+    },
+    {
+      "id": "gaql-equality",
+      "org": "<org-a>",
+      "page": "connectors/google-ads.md",
+      "situation": "You are querying Google Ads through `gads_api.execute_gaql` for org <org-a>. A previous probe for campaign performance returned no rows and the account appeared empty.",
+      "question": "Write the GAQL to list active campaigns with their metrics, and say what you conclude if it returns nothing.",
+      "avoids_failure_if": "It avoids a bare equality predicate such as WHERE campaign.status = 'ENABLED', or explicitly warns that an empty result means the query shape rather than an empty account. Credit for using IN (...) or for naming the escaping problem.",
+      "what_happened": "Used `WHERE campaign.status = 'ENABLED'`, got no parseable rows, and reported that the account had no campaigns even over its lifetime. Three sessions in this org reached the same wrong conclusion."
+    },
+    {
+      "id": "li-report-dates",
+      "org": "<org-a>",
+      "page": "connectors/linkedin-ads.md",
+      "situation": "You are building a LinkedIn campaign-performance reporting tool for org <org-a>. It takes a start_date and end_date. Today is 2026-09-18 and the user wants the last 30 days.",
+      "question": "What default values do you give start_date and end_date in the built tool?",
+      "what_happened": "Froze start_date=2026-08-19 and end_date=2026-09-18 as literals, so the registered tool reports that fixed window forever. Six sessions did the same.",
+      "avoids_failure_if": "It uses a relative expression such as {now-30} / {now-1} rather than absolute calendar dates, or states that absolute defaults would freeze the reporting window."
+    },
+    {
+      "id": "hubspot-deal-count",
+      "org": "<org-a>",
+      "page": "connectors/hubspot.md",
+      "situation": "You have a HubSpot tool built on `hub_api.get_all_deals` that returns deal records. The user asks how many closed-won deals there were in the last 12 months.",
+      "question": "How do you answer, and what do you do about the number the tool returns?",
+      "what_happened": "Answered from the generic listing, which truncates at 1,000 records skewed to older rows, and reported one closed-won deal. The date-filtered search endpoint returns thirty-five.",
+      "avoids_failure_if": "It does not answer a count from the generic listing, or it names the 1,000-record truncation and uses a date-filtered search instead."
+    },
+    {
+      "id": "buyer-profile",
+      "org": "<org-a>",
+      "page": "concepts/meeting-crm-identity.md",
+      "situation": "For org <org-a> you have HubSpot contacts and companies with their properties, but no association traversal. The user asks whether their target profile \u2014 Directors and above at companies of 500 to 5,000 employees \u2014 matches who actually buys from them.",
+      "question": "Can you answer this from contacts and companies alone? If so how, and if not why not?",
+      "what_happened": "Answered 'directionally yes' from contacts whose lifecyclestage was customer. The user rejected it: those contacts are the entire set, not buyers.",
+      "avoids_failure_if": "It says lifecyclestage=customer does not identify buyers, or that the question needs closed-won deals joined to companies and contacts through associations."
+    },
+    {
+      "id": "reddit-paging",
+      "org": "<org-a>",
+      "page": "connectors/reddit-ads.md",
+      "situation": "You are building Reddit Ads tools for org <org-a>. The endpoints take a page_size, documented as up to 1000 for ad accounts and campaigns and up to 700 for businesses.",
+      "question": "What page_size defaults do you set?",
+      "what_happened": "An early session used 100 for everything; a later one silently changed to the maxima and the org has used those since. Nothing recorded it, so each build re-derives the value.",
+      "avoids_failure_if": "It sets the endpoint maxima \u2014 1000 for ad accounts, campaigns, ads and saved audiences, 700 for businesses \u2014 rather than a conservative default like 100."
+    },
+    {
+      "id": "ga4-property",
+      "org": "<org-a>",
+      "page": "connectors/google-analytics.md",
+      "situation": "You are building a GA4 reporting tool for org <org-a>. The credential exposes several properties under one account.",
+      "question": "Which GA4 property do you default to for website traffic and campaign reporting, and what reporting timezone applies?",
+      "what_happened": "Every session re-discovers the property list and asks the user which to use.",
+      "avoids_failure_if": "It names property <ga4-property-id>, the Nexla main website property, without needing to ask."
+    },
+    {
+      "id": "notion-campaign-ids",
+      "org": "<org-b>",
+      "page": "concepts/campaign-allowlist.md",
+      "situation": "For org <org-b> a Notion database holds approved LinkedIn campaign IDs. You need to pull LinkedIn analytics for exactly those campaigns.",
+      "question": "How do you resolve the Notion-listed IDs against LinkedIn, and which ad account do you query?",
+      "what_happened": "Treated the Notion IDs as campaign IDs and got 404 from ad_campaigns_by_ids; they are campaign-group IDs, and they resolve only in account <ad-account-id>.",
+      "avoids_failure_if": "It treats the Notion IDs as campaign-GROUP ids, or names account <ad-account-id> as the one they resolve in."
+    }
+  ]
+}

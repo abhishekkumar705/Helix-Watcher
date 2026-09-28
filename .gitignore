@@ -1,0 +1,15 @@
+# Secrets. Copy .env.example and fill it in.
+.env
+
+# Model runs — regenerate with harness/filter/run.py and harness/synth/run.py
+out/
+
+# Session transcripts pulled from the database. They carry credential ids, account ids
+# and live customer records, and they are regenerable with evals/dump_material.py.
+evals/material/
+
+# The product repository, cloned separately. Point at it with EXPRESS_CODE_PATH.
+express-code/
+
+__pycache__/
+*.pyc
