@@ -31,6 +31,16 @@ Measurements are in `docs/report.md`.
               ▼                               ▼
        org context corpus            tool descriptions and
        (writes, automatic)           source configs (automatic)
+              │
+              │  every write, every edit, every deletion
+              ▼
+      ┌───────────────┐
+      │  5. MONITOR   │  periodic, per org
+      │  what survived│  survival, churn, who changed it
+      └───────┬───────┘
+              │
+              └──────────▶  tunes the filter's ranking and
+                            what extraction is allowed to emit
 ```
 
 Each stage exists because it sees something the one before it can't:
@@ -41,6 +51,8 @@ Each stage exists because it sees something the one before it can't:
   existing line*, or *many sessions have settled on this*.
 - **Synthesis** — an organization's accumulated findings. The only place duplicates and
   disagreements are visible.
+- **Monitor** — what happened to the lines after they were written. The only place the
+  pipeline finds out whether it was right.
 
 ---
 
@@ -144,3 +156,47 @@ A set-reconciliation problem. It sits beside the extractor on its own cadence.
 | defect in a tool description | the registered tool |
 | defect in a tool's source config | that source config |
 
+---
+
+## Stage 5 — Monitor
+
+Periodic, per org, over the corpus's own change history. Everything above it decides what to
+write; this is the only stage that finds out whether writing it was correct.
+
+**It needs no new store.** Helix already records every version of every path in an
+append-only table, and exposes it per path — each entry carrying the version, the actor, the
+writing agent, the timestamp and a tombstone when the line was removed. The monitor reads
+that history. It adds a reader, not a mechanism.
+
+### What it measures
+
+Per line, per page, per organization:
+
+- **When it was added, and by whom.** The watcher, a human, or another agent. A line's origin
+  is what makes every number below attributable to a stage.
+- **How long it survived.** Time from write to first overwrite or deletion. A line still
+  standing after months is one the organization is using.
+- **How often it changes.** A page rewritten every week is either genuinely volatile or a
+  place two sessions keep disagreeing, and the monitor can tell those apart by who is doing
+  the rewriting.
+- **Whether a human removed it.** The strongest signal available. A line the watcher wrote
+  and a person deleted was wrong, and nothing else in the pipeline can discover that.
+- **Whether the same fact was written twice.** Two independent writes of one value means
+  synthesis failed to merge them.
+
+### What it tunes
+
+Each measurement lands on a specific parameter:
+
+| what the monitor sees | what it changes |
+|---|---|
+| a category whose lines are deleted by humans more often than they survive | that category is demoted in the filter, or extraction stops emitting it |
+| sessions below a rank band yield nothing that survives | the extraction cutoff moves up, and budget goes to the top of the queue |
+| a category with high survival and low volume | the filter's weighting on it rises |
+| one page churning between two values | a synthesis conflict rather than an extraction error, routed accordingly |
+| lines that survive but are never read | the corpus is growing in a direction nobody uses |
+| the same fact written by two sessions | synthesis is not merging on that shape of finding |
+
+Without this stage every parameter in the pipeline is set by hand against a fixed eval set,
+which measures agreement with one reading at one point in time. The monitor replaces that
+with what the organization actually kept.
